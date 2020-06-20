@@ -49,14 +49,14 @@ func TestExecFn_MakeRequest(t *testing.T) {
 
 	t.Run("should fail if cannot build request", func(t *testing.T) {
 		r := make(reporter)
-		execer(nil).MakeRequest("n/a", "").ExpectIt(r)
+		execer(nil).MakeRequest(Using("n/a", "", nil)).ExpectIt(r)
 		assert.Equal(t, 1, r["Errorf"])
 		assert.Equal(t, 1, r["FailNow"])
 	})
 
 	t.Run("should fail if builder returns error", func(t *testing.T) {
 		r := make(reporter)
-		execer(nil).MakeRequest(http.MethodGet, "http://example.com", func(*http.Request) error {
+		execer(nil).MakeRequest(Get("http://example.com"), func(*http.Request) error {
 			return errors.New("test")
 		}).ExpectIt(r)
 		assert.Equal(t, 1, r["Errorf"])
@@ -65,17 +65,38 @@ func TestExecFn_MakeRequest(t *testing.T) {
 
 	t.Run("should fail if could not execute request", func(t *testing.T) {
 		r := make(reporter)
-		execer(errors.New("test")).MakeRequest(http.MethodGet, "http://example.com").ExpectIt(r)
+		execer(errors.New("test")).MakeRequest(Get("http://example.com")).ExpectIt(r)
 		assert.Equal(t, 1, r["Errorf"])
 		assert.Equal(t, 1, r["FailNow"])
 	})
 
 	t.Run("should fail if assertion fails", func(t *testing.T) {
 		r := make(reporter)
-		execer(nil).MakeRequest(http.MethodGet, "http://example.com").ExpectIt(r, func(*http.Response) error {
+		execer(nil).MakeRequest(Get("http://example.com")).ExpectIt(r, func(*http.Response) error {
 			return errors.New("test")
 		})
 		assert.Equal(t, 1, r["Errorf"])
+		assert.Equal(t, 0, r["FailNow"])
+	})
+
+	t.Run("post request factory", func(t *testing.T) {
+		r := make(reporter)
+		execer(nil).MakeRequest(Post("https://example.com", nil)).ExpectIt(r)
+		assert.Equal(t, 0, r["Errorf"])
+		assert.Equal(t, 0, r["FailNow"])
+	})
+
+	t.Run("put request factory", func(t *testing.T) {
+		r := make(reporter)
+		execer(nil).MakeRequest(Put("https://example.com", nil)).ExpectIt(r)
+		assert.Equal(t, 0, r["Errorf"])
+		assert.Equal(t, 0, r["FailNow"])
+	})
+
+	t.Run("delete request factory", func(t *testing.T) {
+		r := make(reporter)
+		execer(nil).MakeRequest(Delete("https://example.com")).ExpectIt(r)
+		assert.Equal(t, 0, r["Errorf"])
 		assert.Equal(t, 0, r["FailNow"])
 	})
 }

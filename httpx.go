@@ -3,6 +3,7 @@ package httpx
 
 import (
 	"context"
+	"io"
 	"net/http"
 )
 
@@ -24,12 +25,12 @@ type ExecFn func(*http.Request) (*http.Response, error)
 //
 // The core library provides certain general purpose builders. See RequestBuilder and it's implementations
 // for more details on builders and how you can create a custom builder.
-func (fn ExecFn) MakeRequest(method, url string, builders ...RequestBuilder) Assertable {
+func (fn ExecFn) MakeRequest(factory RequestFactory, builders ...RequestBuilder) Assertable {
 	var err error
 
 	// build a new request and apply customisations
 	var request *http.Request
-	if request, err = http.NewRequestWithContext(context.Background(), method, url, http.NoBody); err != nil {
+	if request, err = factory(); err != nil {
 		return fail("httpx: failed to create request: %v", err)
 	}
 
@@ -67,6 +68,41 @@ type Assertable func(TestingT, ...Assertion)
 func (a Assertable) ExpectIt(t TestingT, assertions ...Assertion) {
 	t.Helper()
 	a(t, assertions...)
+}
+
+// RequestFactory defines a function capable of creating http.Request instances.
+// Use of this type allows us to decouple MakeRequest(...) from the actual underlying
+// mechanism of building an http.Request. Implementations of this type could (say)
+// create instances configured for a PaaS (like Google App Engine) and more.
+//
+// The core library provides a default implementation which should be sufficient for most use cases.
+type RequestFactory func() (*http.Request, error)
+
+// Using returns a RequestFactory which is a wrapper over the default http.NewRequest method
+func Using(method, url string, body io.Reader) RequestFactory {
+	return func() (*http.Request, error) {
+		return http.NewRequestWithContext(context.Background(), method, url, body)
+	}
+}
+
+// Get is a shorthand method to create a RequestFactory with http.MethodGet
+func Get(url string) RequestFactory {
+	return Using(http.MethodGet, url, nil)
+}
+
+// Post is a shorthand method to create a RequestFactory with http.MethodPost
+func Post(url string, body io.Reader) RequestFactory {
+	return Using(http.MethodPost, url, body)
+}
+
+// Put is a shorthand method to create a RequestFactory with http.MethodPut
+func Put(url string, body io.Reader) RequestFactory {
+	return Using(http.MethodPut, url, body)
+}
+
+// Delete is a shorthand method to create a RequestFactory with http.MethodDelete
+func Delete(url string) RequestFactory {
+	return Using(http.MethodDelete, url, nil)
 }
 
 // RequestBuilder defines a function that customises the request before it's sent out.
