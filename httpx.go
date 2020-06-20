@@ -120,13 +120,6 @@ func Delete(url string) RequestFactory {
 	return Using(http.MethodDelete, url, nil)
 }
 
-// RequestBuilder defines a function that customises the request before it's sent out.
-type RequestBuilder func(*http.Request) error
-
-// Assertion defines a function that performs some sort of assertion on the response
-// to make sure that request was executed as expected.
-type Assertion func(*http.Response) error
-
 // TestingT allows us to decouple our code from the actual testing.T type.
 // Most end user shouldn't care about it.
 type TestingT interface {
