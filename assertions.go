@@ -3,6 +3,7 @@ package httpx
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 )
@@ -24,11 +25,11 @@ func ToHaveStatus(status int) Assertion {
 	}
 }
 
-// JSON returns an assertion that un-marshal the response body and invoke the given callback with the decoded value.
+// BodyJson returns an assertion that un-marshal the response body and invoke the given callback with the decoded value.
 // The given callback must be function with following signature,
 //    func cb(x X) error
 // where X can be any type that json.Decoder supports.
-func JSON(cb interface{}) Assertion {
+func BodyJson(cb interface{}) Assertion {
 	// extract type and value of callback
 	var t = reflect.TypeOf(cb)
 	var v = reflect.ValueOf(cb)
@@ -60,6 +61,19 @@ func JSON(cb interface{}) Assertion {
 			return fmt.Errorf("json: %v", err)
 		}
 		return nil
+	}
+}
+
+// BodyBytes returns an Assertion that reads the response body
+func BodyBytes(cb func([]byte) error) Assertion {
+	return func(response *http.Response) (err error) {
+		defer checkClose(response.Body, &err)
+
+		if body, err := ioutil.ReadAll(response.Body); err != nil {
+			return err
+		} else {
+			return cb(body)
+		}
 	}
 }
 
