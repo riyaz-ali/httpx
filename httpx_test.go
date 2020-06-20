@@ -17,15 +17,6 @@ func dummyAssertion(response *http.Response) error {
 	return nil
 }
 
-func TestAssertable_ExpectIt(t *testing.T) {
-	var a = Assertable(func(assertions ...Assertion) {
-		assert.True(t, len(assertions) == 1)
-		assert.True(t, reflect.ValueOf(dummyAssertion).Pointer() == reflect.ValueOf(assertions[0]).Pointer())
-	})
-
-	a.ExpectIt(dummyAssertion)
-}
-
 // TestingT implementation that logs it's method calls
 type reporter map[string]int
 
@@ -39,6 +30,15 @@ func (r reporter) Helper() {
 	r["Helper"] = r["Helper"] + 1
 }
 
+func TestAssertable_ExpectIt(t *testing.T) {
+	var a = Assertable(func(_ TestingT, assertions ...Assertion) {
+		assert.True(t, len(assertions) == 1)
+		assert.True(t, reflect.ValueOf(dummyAssertion).Pointer() == reflect.ValueOf(assertions[0]).Pointer())
+	})
+
+	a.ExpectIt(make(reporter), dummyAssertion)
+}
+
 func TestExecFn_MakeRequest(t *testing.T) {
 	// helper function to build noop ExecFn
 	var execer = func(err error) ExecFn {
@@ -49,30 +49,30 @@ func TestExecFn_MakeRequest(t *testing.T) {
 
 	t.Run("should fail if cannot build request", func(t *testing.T) {
 		r := make(reporter)
-		execer(nil).MakeRequest(r, "n/a", "").ExpectIt()
+		execer(nil).MakeRequest("n/a", "").ExpectIt(r)
 		assert.Equal(t, 1, r["Errorf"])
 		assert.Equal(t, 1, r["FailNow"])
 	})
 
 	t.Run("should fail if builder returns error", func(t *testing.T) {
 		r := make(reporter)
-		execer(nil).MakeRequest(r, http.MethodGet, "http://example.com", func(*http.Request) error {
+		execer(nil).MakeRequest(http.MethodGet, "http://example.com", func(*http.Request) error {
 			return errors.New("test")
-		}).ExpectIt()
+		}).ExpectIt(r)
 		assert.Equal(t, 1, r["Errorf"])
 		assert.Equal(t, 1, r["FailNow"])
 	})
 
 	t.Run("should fail if could not execute request", func(t *testing.T) {
 		r := make(reporter)
-		execer(errors.New("test")).MakeRequest(r, http.MethodGet, "http://example.com").ExpectIt()
+		execer(errors.New("test")).MakeRequest(http.MethodGet, "http://example.com").ExpectIt(r)
 		assert.Equal(t, 1, r["Errorf"])
 		assert.Equal(t, 1, r["FailNow"])
 	})
 
 	t.Run("should fail if assertion fails", func(t *testing.T) {
 		r := make(reporter)
-		execer(nil).MakeRequest(r, http.MethodGet, "http://example.com").ExpectIt(func(*http.Response) error {
+		execer(nil).MakeRequest(http.MethodGet, "http://example.com").ExpectIt(r, func(*http.Response) error {
 			return errors.New("test")
 		})
 		assert.Equal(t, 1, r["Errorf"])

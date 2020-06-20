@@ -20,7 +20,7 @@ type ExecFn func(*http.Request) (*http.Response, error)
 //
 // Although exported, user's won't be able to do much with this type. Instead they should use
 // the ExpectIt(...) method to allow fluent chaining with MakeRequest(...).
-type Assertable func(...Assertion)
+type Assertable func(TestingT, ...Assertion)
 
 // MakeRequest is the primary entry point into the framework.
 //
@@ -30,36 +30,30 @@ type Assertable func(...Assertion)
 //
 // The core library provides certain general purpose builders. See RequestBuilder and it's implementations
 // for more details on builders and how you can create a custom builder.
-func (fn ExecFn) MakeRequest(t TestingT, method, url string, builders ...RequestBuilder) Assertable {
+func (fn ExecFn) MakeRequest(method, url string, builders ...RequestBuilder) Assertable {
 	var err error
-
-	// mark as helper to exclude from logs
-	if th, ok := t.(interface {
-		Helper()
-	}); ok {
-		th.Helper()
-	}
 
 	// build a new request and apply customisations
 	var request *http.Request
 	if request, err = http.NewRequestWithContext(context.Background(), method, url, http.NoBody); err != nil {
-		return fail(t, "httpx: failed to create request: %v", err)
+		return fail("httpx: failed to create request: %v", err)
 	}
 
 	for _, fn := range builders {
 		if err = fn(request); err != nil {
-			return fail(t, "httpx: builder: %v", err)
+			return fail("httpx: builder: %v", err)
 		}
 	}
 
 	// execute the request
 	var response *http.Response
 	if response, err = fn(request); err != nil {
-		return fail(t, "httpx: failed to execute request: %v", err)
+		return fail("httpx: failed to execute request: %v", err)
 	}
 
 	// return an Assertable to run assertions on response
-	return func(assertions ...Assertion) {
+	return func(t TestingT, assertions ...Assertion) {
+		t.Helper()
 		for _, fn := range assertions {
 			if err = fn(response); err != nil {
 				t.Errorf("httpx: assertion: %v", err)
@@ -70,8 +64,9 @@ func (fn ExecFn) MakeRequest(t TestingT, method, url string, builders ...Request
 
 // ExpectIt allows us to implement fluent chaining with MakeRequest(...).
 // Use this method instead of directly invoking the Assertable to improve readability of your code.
-func (a Assertable) ExpectIt(assertions ...Assertion) {
-	a(assertions...)
+func (a Assertable) ExpectIt(t TestingT, assertions ...Assertion) {
+	t.Helper()
+	a(t, assertions...)
 }
 
 // RequestBuilder defines a function that customises the request before it's sent out.
@@ -86,11 +81,13 @@ type Assertion func(*http.Response) error
 type TestingT interface {
 	Errorf(format string, args ...interface{})
 	FailNow()
+	Helper()
 }
 
 // fail returns a no-op Assertable that allows us to break out of MakeRequest(...) quicker.
-func fail(t TestingT, format string, args ...interface{}) Assertable {
-	return func(...Assertion) {
+func fail(format string, args ...interface{}) Assertable {
+	return func(t TestingT, _ ...Assertion) {
+		t.Helper()
 		t.Errorf(format, args...)
 		t.FailNow() // doesn't return
 	}
