@@ -4,8 +4,6 @@ package httpx
 import (
 	"context"
 	"net/http"
-	"reflect"
-	"runtime"
 )
 
 // ExecFn defines a function that can take an http.Request and return an http.Response (and optionally, an error).
@@ -50,7 +48,7 @@ func (fn ExecFn) MakeRequest(t TestingT, method, url string, builders ...Request
 
 	for _, fn := range builders {
 		if err = fn(request); err != nil {
-			return fail(t, "httpx: %s failed: %v", fn.String(), err)
+			return fail(t, "httpx: builder: %v", err)
 		}
 	}
 
@@ -64,7 +62,7 @@ func (fn ExecFn) MakeRequest(t TestingT, method, url string, builders ...Request
 	return func(assertions ...Assertion) {
 		for _, fn := range assertions {
 			if err = fn(response); err != nil {
-				t.Errorf("httpx: assertion %s failed: %v", fn.String(), err)
+				t.Errorf("httpx: assertion: %v", err)
 			}
 		}
 	}
@@ -79,25 +77,9 @@ func (a Assertable) ExpectIt(assertions ...Assertion) {
 // RequestBuilder defines a function that customises the request before it's sent out.
 type RequestBuilder func(*http.Request) error
 
-// String returns the name of the method which it looks up reflectively.
-// Because of the way it work, it would return very weird names for inline functions.
-// To keep your logs sane and make sense out of them, we recommend to define your
-// custom RequestBuilder as separate method (not inline).
-func (fn RequestBuilder) String() string {
-	return runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
-}
-
 // Assertion defines a function that performs some sort of assertion on the response
 // to make sure that request was executed as expected.
 type Assertion func(*http.Response) error
-
-// String returns the name of the method which it looks up reflectively.
-// Because of the way it work, it would return very weird names for inline functions.
-// To keep your logs sane and make sense out of them, we recommend to define your
-// custom Assertion as separate method (not inline).
-func (fn Assertion) String() string {
-	return runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
-}
 
 // TestingT allows us to decouple our code from the actual testing.T type.
 // Most end user shouldn't care about it.

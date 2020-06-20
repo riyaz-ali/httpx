@@ -17,14 +17,6 @@ func dummyAssertion(response *http.Response) error {
 	return nil
 }
 
-func TestRequestBuilder_String(t *testing.T) {
-	assert.Equal(t, "go.cubeq.co/httpx_test.dummyRequestBuilder", RequestBuilder(dummyRequestBuilder).String())
-}
-
-func TestAssertion_String(t *testing.T) {
-	assert.Equal(t, "go.cubeq.co/httpx_test.dummyAssertion", Assertion(dummyAssertion).String())
-}
-
 func TestAssertable_ExpectIt(t *testing.T) {
 	var a = Assertable(func(assertions ...Assertion) {
 		assert.True(t, len(assertions) == 1)
