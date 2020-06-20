@@ -16,12 +16,6 @@ import (
 // The core package provides two implementations that works with net/http package.
 type ExecFn func(*http.Request) (*http.Response, error)
 
-// Assertable defines a function that can take a slice of assertions and apply it on http.Response.
-//
-// Although exported, user's won't be able to do much with this type. Instead they should use
-// the ExpectIt(...) method to allow fluent chaining with MakeRequest(...).
-type Assertable func(TestingT, ...Assertion)
-
 // MakeRequest is the primary entry point into the framework.
 //
 // This method builds a request object, apply the given customisations / builders to it and
@@ -61,6 +55,12 @@ func (fn ExecFn) MakeRequest(method, url string, builders ...RequestBuilder) Ass
 		}
 	}
 }
+
+// Assertable defines a function that can take a slice of assertions and apply it on http.Response.
+//
+// Although exported, user's won't be able to do much with this type. Instead they should use
+// the ExpectIt(...) method to allow fluent chaining with MakeRequest(...).
+type Assertable func(TestingT, ...Assertion)
 
 // ExpectIt allows us to implement fluent chaining with MakeRequest(...).
 // Use this method instead of directly invoking the Assertable to improve readability of your code.
