@@ -1,17 +1,16 @@
 package httpx_test
 
 import (
+	"bytes"
 	"errors"
 	"github.com/stretchr/testify/assert"
 	. "go.cubeq.co/httpx"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"testing"
 )
-
-func dummyRequestBuilder(request *http.Request) error {
-	return nil
-}
 
 func dummyAssertion(response *http.Response) error {
 	return nil
@@ -43,7 +42,8 @@ func TestExecFn_MakeRequest(t *testing.T) {
 	// helper function to build noop ExecFn
 	var execer = func(err error) ExecFn {
 		return func(*http.Request) (*http.Response, error) {
-			return nil, err
+			var body = ioutil.NopCloser(bytes.NewBuffer(nil))
+			return &http.Response{StatusCode: http.StatusOK, Body: body}, err
 		}
 	}
 
@@ -96,6 +96,43 @@ func TestExecFn_MakeRequest(t *testing.T) {
 	t.Run("delete request factory", func(t *testing.T) {
 		r := make(reporter)
 		execer(nil).MakeRequest(Delete("https://example.com")).ExpectIt(r)
+		assert.Equal(t, 0, r["Errorf"])
+		assert.Equal(t, 0, r["FailNow"])
+	})
+}
+
+type errorReader struct {
+	error
+}
+
+func (e errorReader) Read([]byte) (int, error) {
+	return 0, e.error
+}
+
+func TestReadResponseBodyMultipleTimes(t *testing.T) {
+	var execer = func(body io.Reader) ExecFn {
+		return func(*http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(body)}, nil
+		}
+	}
+
+	t.Run("propagates error properly", func(t *testing.T) {
+		r := make(reporter)
+		execer(errorReader{errors.New("test")}).
+			MakeRequest(Get("https://example.com")).ExpectIt(r)
+		assert.Equal(t, 1, r["Errorf"])
+		assert.Equal(t, 1, r["FailNow"])
+	})
+
+	t.Run("multiple assertions reading response should work", func(t *testing.T) {
+		readBody := Assertion(func(response *http.Response) error {
+			_, _ = ioutil.ReadAll(response.Body)
+			return response.Body.Close()
+		})
+
+		r := make(reporter)
+		execer(bytes.NewReader(nil)).
+			MakeRequest(Get("https://example.com")).ExpectIt(r, readBody, readBody)
 		assert.Equal(t, 0, r["Errorf"])
 		assert.Equal(t, 0, r["FailNow"])
 	})

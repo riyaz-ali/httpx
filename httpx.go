@@ -2,8 +2,10 @@
 package httpx
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -49,10 +51,23 @@ func (fn ExecFn) MakeRequest(factory RequestFactory, builders ...RequestBuilder)
 	// return an Assertable to run assertions on response
 	return func(t TestingT, assertions ...Assertion) {
 		t.Helper()
+		defer response.Body.Close() // make sure to close the original response body always
+
+		// prepare a bytes.Buffer that'd allow us to seek to start after every assertion
+		// so that we can have multiple assertions that could read response's body
+		var buf bytes.Buffer
+		if _, err := buf.ReadFrom(response.Body); err != nil {
+			t.Errorf("httpx: failed to read body into buffer: %v", err)
+			t.FailNow()
+		}
+		var reader = bytes.NewReader(buf.Bytes())
+		response.Body = ioutil.NopCloser(reader)
+
 		for _, fn := range assertions {
 			if err = fn(response); err != nil {
 				t.Errorf("httpx: assertion: %v", err)
 			}
+			_, _ = reader.Seek(0, io.SeekStart) // safe to ignore return values
 		}
 	}
 }
