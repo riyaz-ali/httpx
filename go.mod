@@ -1,4 +1,4 @@
-module go.cubeq.co/httpx
+module go.riyazali.net/httpx
 
 go 1.13
 
