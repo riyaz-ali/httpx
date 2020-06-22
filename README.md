@@ -58,8 +58,8 @@ This example demonstrates how you would use **`httpx`** to make a `GET` request 
 
 ```golang
 import (
-  . "go.cubeq.co/httpx"
-  . "go.cubeq.co/httpx/helpers"
+  . "go.riyazali.net/httpx"
+  . "go.riyazali.net/httpx/helpers"
   "net/http"
   "testing"
 )
