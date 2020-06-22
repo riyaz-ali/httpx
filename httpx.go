@@ -1,5 +1,5 @@
 // Package httpx provides an expressive framework to test http endpoints and handlers.
-package httpx
+package httpx // import "go.riyazali.net/httpx"
 
 import (
 	"bytes"
