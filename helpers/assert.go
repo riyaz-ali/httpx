@@ -1,3 +1,4 @@
+// Package helpers provide a set of handy utility methods to work with httpx.
 package helpers
 
 import (
@@ -6,7 +7,7 @@ import (
 	"strings"
 )
 
-// AssertThat asserts that the given condition evaluated to true and returns an error if not.
+// AssertThat asserts that the given condition is evaluated to true and returns an error if not.
 // This method allows us to write more compact assertions, such as,
 //    BodyJson(func(x X) error {
 //        return AssertThat(x.Y != nil, "Y is nil")

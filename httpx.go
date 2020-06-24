@@ -1,4 +1,7 @@
 // Package httpx provides an expressive framework to test http endpoints and handlers.
+//
+// It provides a minimal, yet powerful, function-driven framework to write simple
+// and concise tests for HTTP, that reads like poem.
 package httpx // import "go.riyazali.net/httpx"
 
 import (
@@ -14,19 +17,24 @@ import (
 // This is the core type defined by this package and instances of this type does the
 // actual heavy lifting work of making the request, receiving responses and more.
 // How the actual execution is done is left to the implementation. Some may make actual
-// http calls to remote endpoint whereas others would call in-memory http.Handler.
+// http calls to remote endpoint whereas others might call in-memory handlers.
 //
-// The core package provides two implementations that works with net/http package.
+// The executors package provides two implementations that works with net/http package.
 type ExecFn func(*http.Request) (*http.Response, error)
 
 // MakeRequest is the primary entry point into the framework.
 //
-// This method builds a request object, apply the given customisations / builders to it and
+// This method builds a request object, apply the given RequestBuilders to it and
 // then pass it to the ExecFn for execution returning an Assertable which you can then use to perform
 // assertions on the response etc.
 //
+//  WithDefaultClient().
+//    MakeRequest(
+//      Get("/versions"), WithHeader("Accept", "application/json")
+//    ).ExpectIt(t, assertions...)
+//
 // The core library provides certain general purpose builders. See RequestBuilder and it's implementations
-// for more details on builders and how you can create a custom builder.
+// in builders package for more details and how you can create a custom builder.
 func (fn ExecFn) MakeRequest(factory RequestFactory, builders ...RequestBuilder) Assertable {
 	var err error
 
@@ -72,13 +80,14 @@ func (fn ExecFn) MakeRequest(factory RequestFactory, builders ...RequestBuilder)
 	}
 }
 
-// Assertable defines a function that can take a slice of assertions and apply it on http.Response.
+// Assertable defines a function that can take a slice of assertions and apply it on the response.
 //
 // Although exported, user's won't be able to do much with this type. Instead they should use
-// the ExpectIt(...) method to allow fluent chaining with MakeRequest(...).
+// the ExpectIt method to allow fluent chaining with MakeRequest.
 type Assertable func(TestingT, ...Assertion)
 
-// ExpectIt allows us to implement fluent chaining with MakeRequest(...).
+// ExpectIt allows us to implement fluent chaining with MakeRequest.
+//  WithDefaultClient().MakeRequest(...).ExpectIt(t, ToHaveStatus(http.StatusOK), HaveHeader("X-Request-Id"))
 // Use this method instead of directly invoking the Assertable to improve readability of your code.
 func (a Assertable) ExpectIt(t TestingT, assertions ...Assertion) {
 	t.Helper()
@@ -86,14 +95,15 @@ func (a Assertable) ExpectIt(t TestingT, assertions ...Assertion) {
 }
 
 // Assertion defines a function that performs some sort of assertion on the response
-// to make sure that request was executed as expected.
+// to make sure that request was executed as expected. Checkout the assertions package
+// to see the default assertions shipped with httpx.
 type Assertion func(*http.Response) error
 
 // RequestBuilder defines a function that customises the request before it's sent out.
 type RequestBuilder func(*http.Request) error
 
 // RequestFactory defines a function capable of creating http.Request instances.
-// Use of this type allows us to decouple MakeRequest(...) from the actual underlying
+// Use of this type allows us to decouple MakeRequest from the actual underlying
 // mechanism of building an http.Request. Implementations of this type could (say)
 // create instances configured for a PaaS (like Google App Engine) and more.
 //
@@ -128,7 +138,8 @@ func Delete(url string) RequestFactory {
 }
 
 // TestingT allows us to decouple our code from the actual testing.T type.
-// Most end user shouldn't care about it.
+// Most end user shouldn't care about it. It is marked as exported because it
+// appears as part of the exported function signature of httpx.
 type TestingT interface {
 	Errorf(format string, args ...interface{})
 	FailNow()
