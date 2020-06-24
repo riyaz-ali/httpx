@@ -1,7 +1,7 @@
 # httpx
 
 [![Go v1.13](https://img.shields.io/badge/v1.13-blue.svg?labelColor=a8bfc0&color=5692c7&logoColor=fff&style=for-the-badge&logo=Go)](https://golang.org/doc/go1.13)
-[![Codecov coverage](https://img.shields.io/codecov/c/github/riyaz-ali/httpx/master.svg?color=5692c7&logo=codecov&logoColor=ffffff&labelColor=a8bfc0&style=for-the-badge&label=)]((https://codecov.io/gh/riyaz-ali/httpx))
+[![Codecov coverage](https://img.shields.io/codecov/c/github/riyaz-ali/httpx/master.svg?color=5692c7&logo=codecov&logoColor=ffffff&labelColor=a8bfc0&style=for-the-badge&label=)](https://codecov.io/gh/riyaz-ali/httpx)
 [![Github Actions](https://img.shields.io/github/workflow/status/riyaz-ali/httpx/Go%20-%20execute%20library%20tests/master.svg?color=5692c7&logo=github-actions&logoColor=ffffff&labelColor=a8bfc0&style=for-the-badge&label=)](https://github.com/riyaz-ali/httpx/actions)
 [![Godoc](https://img.shields.io/badge/godoc-reference-blue.svg?labelColor=a8bfc0&color=5692c7&logoColor=fff&style=for-the-badge)](https://pkg.go.dev/go.riyazali.net/httpx)
 ![No added preservatives](https://img.shields.io/badge/No-Added_Preservatives-blue.svg?labelColor=a8bfc0&color=5692c7&logoColor=fff&style=for-the-badge)
