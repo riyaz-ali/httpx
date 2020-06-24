@@ -1,56 +1,35 @@
 package httpx
 
 import (
-	. "go.riyazali.net/httpx/assertions"
-	. "go.riyazali.net/httpx/executors"
-	. "go.riyazali.net/httpx/helpers"
+	"errors"
 	"net/http"
 )
 
-func Example_remoteEndpoint() {
-	WithDefaultClient().MakeRequest(
-		Get("https://httpbin.org/get"),
-	).ExpectIt(t,
-		ToHaveStatus(http.StatusOK),
-	)
-}
+var t = (TestingT)(nil)
 
-func Example_httpHandler() {
-	WithHandler(handler).MakeRequest(
-		Get("https://httpbin.org/get"),
-	).ExpectIt(t,
-		ToHaveStatus(http.StatusOK),
-	)
-}
-
-func Example_customClient() {
-	WithClient(
-		WithNoRedirect(),
-		WithCookieJar(jar),
-	).MakeRequest(
-		Get(Url("https://httpbin.org/cookies/set", WithQueryParam("a", "1"))),
-	).ExpectIt(t,
-		ToHaveStatus(http.StatusOK),
-		HaveCookie("a"),
-	)
+var WithExecFn = func() ExecFn {
+	return func(*http.Request) (*http.Response, error) { return nil, nil }
 }
 
 func ExampleAssertion_customAssertion() {
-	WithClient().MakeRequest(
+	WithExecFn().MakeRequest(
 		Get("/versions"),
 	).ExpectIt(t,
 		func(r *http.Response) error {
-			return AssertThat(r.StatusCode == http.StatusOK, "status not ok")
+			if r.StatusCode != http.StatusOK {
+				return errors.New("status not ok")
+			}
+			return nil
 		},
 	)
 }
 
 func ExampleRequestBuilder_customRequestBuilder() {
-	WithClient().MakeRequest(
+	WithExecFn().MakeRequest(
 		Get("/versions"),
 		func(request *http.Request) error {
 			request.AddCookie(&http.Cookie{Name: "a", Value: "1"})
 			return nil
 		},
-	).ExpectIt(t, ToHaveStatus(http.StatusOK))
+	).ExpectIt(t)
 }

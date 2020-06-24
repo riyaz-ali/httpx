@@ -11,13 +11,11 @@ import (
 	"testing"
 )
 
-func dummyAssertion(response *http.Response) error {
-	return nil
-}
-
 // handy utility method to do assertions
 func assert(t *testing.T, cond bool, msg string, args ...interface{}) {
-
+	if !cond {
+		t.Errorf(msg, args...)
+	}
 }
 
 // TestingT implementation that logs it's method calls
@@ -34,6 +32,7 @@ func (r reporter) Helper() {
 }
 
 func TestAssertable_ExpectIt(t *testing.T) {
+	var dummyAssertion = func(response *http.Response) error { return nil }
 	var a = Assertable(func(_ TestingT, assertions ...Assertion) {
 		assert(t, len(assertions) == 1, "must have exactly one assertion")
 		assert(t, reflect.ValueOf(dummyAssertion).Pointer() == reflect.ValueOf(assertions[0]).Pointer(), "must pass unaltered assertion function")
