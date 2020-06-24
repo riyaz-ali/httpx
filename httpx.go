@@ -85,6 +85,13 @@ func (a Assertable) ExpectIt(t TestingT, assertions ...Assertion) {
 	a(t, assertions...)
 }
 
+// Assertion defines a function that performs some sort of assertion on the response
+// to make sure that request was executed as expected.
+type Assertion func(*http.Response) error
+
+// RequestBuilder defines a function that customises the request before it's sent out.
+type RequestBuilder func(*http.Request) error
+
 // RequestFactory defines a function capable of creating http.Request instances.
 // Use of this type allows us to decouple MakeRequest(...) from the actual underlying
 // mechanism of building an http.Request. Implementations of this type could (say)
